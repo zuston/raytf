@@ -1,7 +1,7 @@
 import ray
 
 from model import process
-from tf_cluster_driver import TensorflowCluster
+from tf_cluster import TensorflowCluster
 
 if __name__ == '__main__':
     # ray.init(address='auto')

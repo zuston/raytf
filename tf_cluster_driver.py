@@ -9,7 +9,7 @@ class TensorflowCluster:
     @staticmethod
     def build(resources: Dict[str, Dict[str, str]] = None):
         if not ray.is_initialized():
-            ray.init()
+            ray.init(address='auto')
         tf_cluster = TensorflowCluster()
         tf_cluster.__build(resources=resources)
         return tf_cluster
@@ -18,11 +18,7 @@ class TensorflowCluster:
         self.__logger = get_logger(__name__)
         self.__logger.info("Init tensorflow cluster.")
         self.__role_executors_list = []
-
         self.__ps_size = 0
-
-        if not ray.is_initialized:
-            ray.init()
 
     '''
     resources will be as follows: (memory-unit GB)

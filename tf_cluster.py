@@ -196,7 +196,8 @@ class FLAGS:
     batch_size = 64
     max_steps = 3000
 
-def process(args):
+
+def process_internal(args):
     import numpy as np
     import tensorflow as tf
     from absl import flags, app, logging
@@ -275,6 +276,11 @@ def process(args):
         classifier.evaluate(eval_input_fn)
 
 
+def process_external():
+    import model
+    return model.process
+
+
 if __name__ == '__main__':
     tf_cluster = TensorflowCluster.build(resources=
     {
@@ -283,4 +289,4 @@ if __name__ == '__main__':
         "chief": {"cores": "2", "memory": "2", "gpu": "2", "instances": "1"}
     }
     )
-    tf_cluster.start(model_process=process, args=None)
+    tf_cluster.start(model_process=process_external(), args=None)

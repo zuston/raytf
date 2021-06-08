@@ -1,6 +1,7 @@
 import ray
 import raydp
 
+ray.init(address='auto')
 
 spark = raydp.init_spark('word_count',
                          num_executors=2,
@@ -9,7 +10,8 @@ spark = raydp.init_spark('word_count',
 
 spark.sparkContext.setLogLevel("INFO")
 
-text_file = spark.textFile("hdfs://hadoop-bdwg-g3-ns01/tmp/opal/wordcount.txt")
+# 无法读取到响应的 ns 配置，Hadoop classpath 应该没引入
+text_file = spark.textFile("hdfs://hadoop-bdwg-g3-ns01/tmp/cloud_service/opal/wordcount.txt")
 
 counts = text_file.flatMap(lambda line: line.split(" ")) \
              .map(lambda word: (word, 1)) \
@@ -17,6 +19,6 @@ counts = text_file.flatMap(lambda line: line.split(" ")) \
 
 counts.show()
 
-counts.saveAsTextFile("hdfs://hadoop-bdwg-g3-ns01/tmp/opal/wordcount_results.txt")
+counts.saveAsTextFile("hdfs://hadoop-bdwg-g3-ns01/tmp/cloud_service/opal/wordcount_results.txt")
 
 raydp.stop_spark()

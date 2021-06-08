@@ -45,6 +45,7 @@ class Executor:
         self.__logger.info(f"[{self.__role_name}][{self.__role_index}], Running")
         # if self.__role_name == 'ps' and self.__role_index == 0:
         #     time.sleep(random.randint(10, 20))
+        inject_hadoop_env()
         model_process(args)
         self.__logger.info(f"[{self.__role_name}][{self.__role_index}], Finished")
         return self.__role_name, self.__role_index
@@ -280,6 +281,14 @@ def process_internal(args):
 def process_external():
     import model
     return model.process
+
+
+def inject_hadoop_env():
+    import os
+    os.environ["JAVA_HOME"] = ""
+    os.environ["HADOOP_HDFS_HOME"] = ""
+    os.environ["LD_LIBRARY_PATH"] = ""
+    os.environ["CLASSPATH"] = ""
 
 
 if __name__ == '__main__':

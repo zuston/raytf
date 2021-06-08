@@ -190,7 +190,7 @@ def get_reserved_grpc_port() -> int:
 # FLAGS = flags.FLAGS
 
 class FLAGS:
-    model_dir = "/tmp/opal/4"
+    model_dir = "hdfs://hadoop-bdwg-g3-ns01/tmp/cloud_service/opal/estimator/1"
     dropout = 0.5
     learning_rate = 0.001
     train_epoch = 20
@@ -285,10 +285,13 @@ def process_external():
 
 def inject_hadoop_env():
     import os
-    os.environ["JAVA_HOME"] = ""
-    os.environ["HADOOP_HDFS_HOME"] = ""
-    os.environ["LD_LIBRARY_PATH"] = ""
-    os.environ["CLASSPATH"] = ""
+    os.environ["JAVA_HOME"] = "/usr/java/default"
+    os.environ["HADOOP_HDFS_HOME"] = "/usr/lib/hadoop-hdfs"
+    os.environ["HADOOP_COMMON_HOME"] = "/usr/lib/hadoop"
+    os.environ["HADOOP_MAPRED_HOME"] = "/usr/lib/hadoop-mapreduce"
+    os.environ["HADOOP_CONF_DIR"] = "/etc/hadoop/conf"
+    os.environ["LD_LIBRARY_PATH"] = "/usr/lib/hadoop/lib/native:/usr/java/default/jre/lib/amd64/server"
+    os.environ["CLASSPATH"] = "$(${HADOOP_HDFS_HOME}/bin/hadoop classpath --glob) "
 
 
 if __name__ == '__main__':

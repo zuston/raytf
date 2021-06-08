@@ -10,6 +10,8 @@ spark = raydp.init_spark('word_count',
 
 spark.sparkContext.setLogLevel("INFO")
 
+spark.read.text("hdfs://namenode02-bdwg-g3.qiyi.hadoop/tmp/cloud_service/opal/wordcount.txt").show()
+
 # 无法读取到响应的 ns 配置，Hadoop classpath 应该没引入
 text_file = spark.textFile("hdfs://hadoop-bdwg-g3-ns01/tmp/cloud_service/opal/wordcount.txt")
 

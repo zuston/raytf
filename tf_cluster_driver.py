@@ -1,8 +1,8 @@
 import ray
 from typing import Dict
 
-from tf_executor import Executor
-from log_utils import get_logger
+import tf_executor
+import log_utils
 
 
 class TensorflowCluster:
@@ -15,7 +15,7 @@ class TensorflowCluster:
         return tf_cluster
 
     def __init__(self):
-        self.__logger = get_logger(__name__)
+        self.__logger = log_utils.get_logger(__name__)
         self.__logger.info("Init tensorflow cluster.")
         self.__role_executors_list = []
         self.__ps_size = 0
@@ -65,7 +65,7 @@ class TensorflowCluster:
 
             # executor_objs = [Executor.options(num_cpus=cores, memory=memory_bytes).remote(role_name, index)
             #                  for index in range(instances)]
-            executor_objs = [Executor.remote(role_name, index) for index in range(instances)]
+            executor_objs = [tf_executor.Executor.remote(role_name, index) for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 
             self.__role_executors_list.extend(executor_objs)

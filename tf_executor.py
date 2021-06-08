@@ -7,19 +7,19 @@ import time
 import json
 import os
 
-from log_utils import get_logger
-from tool_utils import get_node_address, get_reserved_grpc_port
+import log_utils
+import tool_utils
 
 
 @ray.remote(max_retries=0)
 class Executor:
     def __init__(self, role_name: str, role_index: int):
-        self.__logger = get_logger(__name__)
+        self.__logger = log_utils.get_logger(__name__)
         self.__role_name = role_name
         self.__role_index = role_index
         # 初始化节点地址和 grpc 端口，用来构建 tf cluster spec.
-        self.__node_ip = get_node_address()
-        self.__grpc_port = get_reserved_grpc_port()
+        self.__node_ip = tool_utils.get_node_address()
+        self.__grpc_port = tool_utils.get_reserved_grpc_port()
 
     def get_role_info(self) -> Tuple[str, int, str]:
         return self.__role_name, self.__role_index, f"{self.__node_ip}:{self.__grpc_port}"

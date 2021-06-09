@@ -33,3 +33,11 @@ def get_reserved_grpc_port() -> int:
     s.bind(('', 0))
     _, port = s.getsockname()
     return port
+
+
+class TestPrinter:
+    def __init__(self):
+        self.__index = 0
+
+    def print(self):
+        return self.__index

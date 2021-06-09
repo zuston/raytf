@@ -284,14 +284,15 @@ def process_external():
 
 
 def inject_hadoop_env():
-    import os
-    os.environ["JAVA_HOME"] = "/usr/java/default"
-    os.environ["HADOOP_HDFS_HOME"] = "/usr/lib/hadoop-hdfs"
-    os.environ["HADOOP_COMMON_HOME"] = "/usr/lib/hadoop"
-    os.environ["HADOOP_MAPRED_HOME"] = "/usr/lib/hadoop-mapreduce"
-    os.environ["HADOOP_CONF_DIR"] = "/etc/hadoop/conf"
-    os.environ["LD_LIBRARY_PATH"] = "/usr/lib/hadoop/lib/native:/usr/java/default/jre/lib/amd64/server"
-    os.environ["CLASSPATH"] = "$(${HADOOP_HDFS_HOME}/bin/hadoop classpath --glob) "
+    # import os
+    # os.environ["JAVA_HOME"] = "/usr/java/default"
+    # os.environ["HADOOP_HDFS_HOME"] = "/usr/lib/hadoop-hdfs"
+    # os.environ["HADOOP_COMMON_HOME"] = "/usr/lib/hadoop"
+    # os.environ["HADOOP_MAPRED_HOME"] = "/usr/lib/hadoop-mapreduce"
+    # os.environ["HADOOP_CONF_DIR"] = "/etc/hadoop/conf"
+    # os.environ["LD_LIBRARY_PATH"] = "/usr/lib/hadoop/lib/native:/usr/java/default/jre/lib/amd64/server"
+    # os.environ["CLASSPATH"] = "$(${HADOOP_HDFS_HOME}/bin/hadoop classpath --glob) "
+    pass
 
 
 if __name__ == '__main__':

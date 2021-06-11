@@ -18,7 +18,7 @@ class Executor:
         self.__role_name = role_name
         self.__role_index = role_index
         # 初始化节点地址和 grpc 端口，用来构建 tf cluster spec.
-        self.__node_ip = tool_utils.get_node_address()
+        self.__node_ip = ray._private.services.get_node_ip_address()
         self.__grpc_port = tool_utils.get_reserved_grpc_port()
 
     def get_role_info(self) -> Tuple[str, int, str]:

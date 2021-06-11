@@ -12,12 +12,12 @@ from absl import flags, app, logging
 # FLAGS = flags.FLAGS
 
 class FLAGS:
-    model_dir = "/tmp/opal/4"
+    model_dir = "/tmp/opal/8"
     dropout = 0.5
     learning_rate = 0.001
-    train_epoch = 20
+    train_epoch = 2000
     batch_size = 64
-    max_steps = 3000
+    max_steps = 300
 
 
 def build_mnist():

@@ -1,5 +1,6 @@
 import psutil
 import socket
+from contextlib import closing
 
 
 def get_node_address() -> str:
@@ -35,9 +36,8 @@ def get_reserved_grpc_port() -> int:
     return port
 
 
-class TestPrinter:
-    def __init__(self):
-        self.__index = 0
-
-    def print(self):
-        return self.__index
+def get_free_port():
+    with closing(socket.socket(socket.AF_INET, socket.SOCK_STREAM)) as s:
+        s.bind(('', 0))
+        s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        return s.getsockname()[1]

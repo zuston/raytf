@@ -42,6 +42,8 @@ class Executor:
         self.__logger.info(f"[{self.__role_name}][{self.__role_index}], cluster spec: {cluster_spec_json}")
         os.environ['TF_GRPC_REUSE_PORT'] = "true"
         os.environ['TF_CONFIG'] = cluster_spec_json
+        os.environ['ROLE_NAME'] = self.__role_name
+        os.environ['ROLE_INDEX'] = str(self.__role_index)
 
     def run(self, model_process, args) -> Tuple[str, int]:
         self.__logger.info(f"[{self.__role_name}][{self.__role_index}], Running")

@@ -65,7 +65,8 @@ class TensorflowCluster:
 
             # executor_objs = [Executor.options(num_cpus=cores, memory=memory_bytes).remote(role_name, index)
             #                  for index in range(instances)]
-            executor_objs = [tf_executor.Executor.remote(role_name, index) for index in range(instances)]
+            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}").remote(role_name, index)
+                             for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 
             self.__role_executors_list.extend(executor_objs)

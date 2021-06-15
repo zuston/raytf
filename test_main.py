@@ -5,7 +5,7 @@ from tf_cluster_driver import TensorflowCluster
 
 if __name__ == '__main__':
 
-    ray.init()
+    # ray.init()
 
     tf_cluster = TensorflowCluster.build(resources=
         {

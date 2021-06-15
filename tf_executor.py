@@ -73,7 +73,8 @@ class Executor:
         import sys
         import re
         sys.argv[0] = re.sub(r'(-script\.pyw|\.exe)?$', '', sys.argv[0])
-        sys.argv = [sys.argv[0], "--logdir", self.__event_log_path, "--port", str(self.__tb_port), "--bind_all"]
+        sys.argv = [sys.argv[0], "--logdir", self.__event_log_path, "--port", str(self.__tb_port),
+                    "--host", self.__node_ip]
         self.__logger.info(f"Starting tensorboard with args: {sys.argv}")
         run_main()
 

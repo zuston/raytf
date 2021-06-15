@@ -87,8 +87,6 @@ class TensorflowCluster:
             if role_name == 'ps':
                 self.__ps_size = instances
 
-            # executor_objs = [Executor.options(num_cpus=cores, memory=memory_bytes).remote(role_name, index)
-            #                  for index in range(instances)]
             executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}",
                                                           num_cpus=cores, memory=memory_bytes)
                                  .remote(role_name, index, self.__event_log_path)

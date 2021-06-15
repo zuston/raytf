@@ -1,7 +1,6 @@
 import ray
 from typing import Dict, Tuple
 import os
-import sys
 import tf_executor
 import log_utils
 
@@ -19,6 +18,7 @@ class TensorflowCluster:
                 "working_dir": current_main_path
             }
             jobconf = ray.job_config.JobConfig(runtime_env=runtime_env)
+            # It will be attached to existed Ray cluster.
             ray.init(address='auto', job_config=jobconf)
         tf_cluster = TensorflowCluster()
         tf_cluster.__build(resources=resources, event_log_path=event_log)
@@ -89,8 +89,9 @@ class TensorflowCluster:
 
             # executor_objs = [Executor.options(num_cpus=cores, memory=memory_bytes).remote(role_name, index)
             #                  for index in range(instances)]
-            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}").remote(role_name, index,
-                                                                                              self.__event_log_path)
+            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}",
+                                                          num_cpus=cores, memory=memory_bytes)
+                                 .remote(role_name, index, self.__event_log_path)
                              for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 

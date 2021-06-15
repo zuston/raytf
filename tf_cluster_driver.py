@@ -1,16 +1,25 @@
 import ray
 from typing import Dict, Tuple
-
+import os
+import sys
 import tf_executor
 import log_utils
 
 UNTRACKED_ROLE_NAMES = {"PS": "", tf_executor.SIDECAR_TB_ROLE_NAME: ""}
 
+
 class TensorflowCluster:
     @staticmethod
     def build(resources: Dict[str, Dict[str, str]] = None, event_log: str = None):
         if not ray.is_initialized():
-            ray.init(address='auto')
+            current_main_path = os.path.dirname(os.path.abspath(__file__))
+            print(f"Current execution file path: [{current_main_path}], its py files "
+                  f"will be distributed to other workers.")
+            runtime_env = {
+                "working_dir": current_main_path
+            }
+            jobconf = ray.job_config.JobConfig(runtime_env=runtime_env)
+            ray.init(address='auto', job_config=jobconf)
         tf_cluster = TensorflowCluster()
         tf_cluster.__build(resources=resources, event_log_path=event_log)
         return tf_cluster
@@ -49,7 +58,8 @@ class TensorflowCluster:
         self.__logger.info("Starting training.")
 
         finished_no_ps_role_size = 0
-        tracked_role_size = len(self.__role_executors_list) - self.__ps_size - (0 if not self.__sidecar_tb_enabled else 1)
+        tracked_role_size = len(self.__role_executors_list) - self.__ps_size - (
+            0 if not self.__sidecar_tb_enabled else 1)
 
         if self.__sidecar_tb_enabled and self.__tb_url:
             self.__logger.info(f"Sidecar tensorboard visiting url: {self.__tb_url}")
@@ -79,7 +89,8 @@ class TensorflowCluster:
 
             # executor_objs = [Executor.options(num_cpus=cores, memory=memory_bytes).remote(role_name, index)
             #                  for index in range(instances)]
-            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}").remote(role_name, index, self.__event_log_path)
+            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}").remote(role_name, index,
+                                                                                              self.__event_log_path)
                              for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 
@@ -88,7 +99,8 @@ class TensorflowCluster:
         role_info_list = ray.get([executor.get_role_info.remote() for executor in self.__role_executors_list])
         self.__logger.info(f"TF cluster role info list: {role_info_list}")
 
-        tb_urls = [tb_url for role_name, _, _, tb_url in role_info_list if role_name == tf_executor.SIDECAR_TB_ROLE_NAME]
+        tb_urls = [tb_url for role_name, _, _, tb_url in role_info_list if
+                   role_name == tf_executor.SIDECAR_TB_ROLE_NAME]
         if tb_urls and len(tb_urls) == 1:
             self.__tb_url = tb_urls[0]
 

@@ -1,2 +1,3 @@
 .idea
 core*
+.pytest_cache

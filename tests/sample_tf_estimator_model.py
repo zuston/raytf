@@ -12,7 +12,7 @@ from absl import flags, app, logging
 # FLAGS = flags.FLAGS
 
 class FLAGS:
-    model_dir = "/tmp/opal/8"
+    model_dir = "/tmp/opal/12"
     dropout = 0.5
     learning_rate = 0.001
     train_epoch = 2000

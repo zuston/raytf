@@ -1,15 +1,23 @@
+import sys
+
 import ray
 from typing import Dict, Tuple
 import os
 import tf_executor
 import log_utils
+from ray.util.placement_group import (
+    placement_group,
+    placement_group_table
+)
 
 UNTRACKED_ROLE_NAMES = {"PS": "", tf_executor.SIDECAR_TB_ROLE_NAME: ""}
 
 
 class TensorflowCluster:
     @staticmethod
-    def build(resources: Dict[str, Dict[str, str]] = None, event_log: str = None):
+    def build(resources: Dict[str, Dict[str, str]] = None,
+              event_log: str = None,
+              resources_reserved_timeout: int = None):
         if not ray.is_initialized():
             current_main_path = os.path.dirname(os.path.abspath(__file__))
             print(f"Current execution file path: [{current_main_path}], its py files "
@@ -20,8 +28,13 @@ class TensorflowCluster:
             jobconf = ray.job_config.JobConfig(runtime_env=runtime_env)
             # It will be attached to existed Ray cluster.
             ray.init(address='auto', job_config=jobconf)
+
+        # Use the GANG strategy to reserve resources
+
         tf_cluster = TensorflowCluster()
-        tf_cluster.__build(resources=resources, event_log_path=event_log)
+        tf_cluster.__build(resources=resources,
+                           event_log_path=event_log,
+                           resources_reserved_timeout=resources_reserved_timeout)
         return tf_cluster
 
     def __init__(self):
@@ -30,6 +43,8 @@ class TensorflowCluster:
         self.__role_executors_list = []
         self.__ps_size = 0
         self.__tb_url = None
+        self.__placement_group = None
+        self.__resources_reserved_timeout = None
 
     '''
     resources will be as follows: (memory-unit GB)
@@ -38,19 +53,25 @@ class TensorflowCluster:
         evaluator: {"cores": "2", "memory": "2", "gpu": "2", "instances": "1"}
     '''
 
-    def __build(self, resources: Dict[str, Dict[str, str]] = None, event_log_path: str = None):
+    def __build(self,
+                resources: Dict[str, Dict[str, str]] = None,
+                event_log_path: str = None,
+                resources_reserved_timeout: int = None):
         if not resources:
             raise Exception("Must set the tensorflow cluster resources.")
         self.__logger.info(f"tf cluster resources: {resources}")
 
         # When enabled event_log_path, it should request new resource for sidecar-tb
         self.__event_log_path = event_log_path
+        self.__resources_reserved_timeout = resources_reserved_timeout
+
         self.__sidecar_tb_enabled = False
         if self.__event_log_path:
             self.__sidecar_tb_enabled = True
             resources[tf_executor.SIDECAR_TB_ROLE_NAME] = {"cores": "2", "memory": "2", "gpu": "0", "instances": "1"}
             self.__sidecar_tb_enabled = True
 
+        self.__reserved_resources(resources)
         self.__build_executor(resources)
         self.__logger.info("Startup tensorflow cluster.")
 
@@ -78,18 +99,18 @@ class TensorflowCluster:
 
     def __build_executor(self, resources):
         for role_name, role_resources_dict in resources.items():
-            # todo: 临时设置为默认资源
-            cores = int(role_resources_dict["cores"]) if role_resources_dict["cores"] else 1
-            memory = int(role_resources_dict["memory"]) if role_resources_dict["memory"] else 1
-            memory_bytes = memory * 1024 * 1024 * 1024
-            instances = int(role_resources_dict["instances"]) if role_resources_dict["instances"] else 1
-
+            cores, memory_bytes, instances = self.__parse_resources_conf(role_resources_dict)
             if role_name == 'ps':
                 self.__ps_size = instances
 
-            executor_objs = [tf_executor.Executor.options(name=f"{role_name}-{index}",
-                                                          num_cpus=cores, memory=memory_bytes)
-                                 .remote(role_name, index, self.__event_log_path)
+            executor_objs = [tf_executor
+                                 .Executor
+                                 .options(name=f"{role_name}-{index}",
+                                          num_cpus=cores,
+                                          memory=memory_bytes,
+                                          placement_group=self.__placement_group)
+                                 .remote(role_name,
+                                         index, self.__event_log_path)
                              for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 
@@ -104,3 +125,34 @@ class TensorflowCluster:
             self.__tb_url = tb_urls[0]
 
         ray.get([executor.set_tf_cluster_spec.remote(role_info_list) for executor in self.__role_executors_list])
+
+    def __reserved_resources(self, resources):
+        resource_bundles = []
+        for _, role_resources_dict in resources.items():
+            cores, memory_bytes, instances = self.__parse_resources_conf(role_resources_dict)
+
+            resource_bundles.extend(
+                [
+                    {
+                        "CPU": cores,
+                        "memory": memory_bytes,
+                    }
+                    for _ in range(instances)
+                ]
+            )
+        pg = placement_group(resource_bundles)
+        self.__placement_group = pg
+        ready, _ = ray.wait([pg.ready()], timeout=self.__resources_reserved_timeout)
+        if not ready:
+            error_message = f"Failed to get resources, driver exit because of reserving resources timeout."
+            self.__logger.error(error_message)
+            raise Exception(error_message)
+
+        self.__logger.info(f"Reserved resources list: {placement_group_table(pg)}")
+
+    def __parse_resources_conf(self, role_resources_dict) -> Tuple:
+        cores = int(role_resources_dict["cores"]) if role_resources_dict["cores"] else 1
+        memory = int(role_resources_dict["memory"]) if role_resources_dict["memory"] else 1
+        memory_bytes = memory * 1024 * 1024 * 1024
+        instances = int(role_resources_dict["instances"]) if role_resources_dict["instances"] else 1
+        return cores, memory_bytes, instances

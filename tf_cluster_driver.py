@@ -140,7 +140,7 @@ class TensorflowCluster:
                     for _ in range(instances)
                 ]
             )
-        pg = placement_group(resource_bundles)
+        pg = placement_group(resource_bundles, strategy="SPREAD")
         self.__placement_group = pg
         ready, _ = ray.wait([pg.ready()], timeout=self.__resources_reserved_timeout)
         if not ready:

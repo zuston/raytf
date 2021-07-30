@@ -1,10 +1,8 @@
-import sys
-
 import ray
 from typing import Dict, Tuple
 import os
-import tf_executor
-import log_utils
+from raytf import tf_executor
+from raytf import log_utils
 from ray.util.placement_group import (
     placement_group,
     placement_group_table

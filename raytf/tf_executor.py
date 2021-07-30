@@ -1,14 +1,10 @@
-import logging
-
 import ray
 from typing import Tuple, List
-import random
-import time
 import json
 import os
 
-import log_utils
-import tool_utils
+from raytf import log_utils
+from raytf import tool_utils
 
 SIDECAR_TB_ROLE_NAME = "sidecar_tensorboard"
 

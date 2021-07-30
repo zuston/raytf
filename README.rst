@@ -3,10 +3,13 @@ Tensorflow Cluster on Ray
 
 How to Use?
 ~~~~~~~~~~~
+python -m pip install raytf
 
 .. code:: python
 
-
+        from raytf.tf_cluster_driver import TensorflowCluster
+        # When you using it in local single machine
+        # ray.init()
         tf_cluster = TensorflowCluster.build(resources=
             {
                 "ps": {"cores": "2", "memory": "2", "gpu": "2", "instances": "1"},

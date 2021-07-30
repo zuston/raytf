@@ -1,3 +1,6 @@
 .idea
 core*
 .pytest_cache
+build/
+dist/
+raytf.egg-info/

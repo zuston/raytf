@@ -1,14 +1,12 @@
 import ray
 
-from tests.sample_tf_estimator_model import process
-from tests.sample_tf_keras_tony_model import tony_keras_process
-from tf_cluster_driver import TensorflowCluster
+from raytf.tests.sample_tf_estimator_model import process
+from raytf.tests.sample_tf_keras_tony_model import tony_keras_process
+from raytf.tf_cluster_driver import TensorflowCluster
 import pytest
 import sys
 from ray.util.placement_group import (
-    placement_group,
-    placement_group_table,
-    remove_placement_group
+    placement_group
 )
 
 

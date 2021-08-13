@@ -1,9 +1,27 @@
-Tensorflow Cluster on Ray
+Distributed Deep Learning Framework on Ray
 -------------------------
+The raytf framework provides a simple interface to support distributed training on ray,
+including tensorflow/pytorch/mxnet. Now tensorflow has been supported,
+others will be included in later.
 
-How to Use?
+Quick Start
 ~~~~~~~~~~~
-python -m pip install raytf
+Only tested under Python3.6 version
+
+1. Install the latest ray version: pip install ray
+2. Install the latest raytf: pip install raytf
+3. Git clone this project: git clone https://github.com/zuston/raytf.git
+4. Enter the example folder and execute the python script file, like the following command.
+
+.. code:: bash
+
+        cd raytf
+        cd example
+        python mnist.py
+
+
+How to Use
+~~~~~~~~~~~
 
 .. code:: python
 
@@ -16,7 +34,8 @@ python -m pip install raytf
                 "worker": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1},
                 "chief": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1}
             },
-            event_log="/tmp/opal/4"
+            event_log="/tmp/opal/4",
+            resources_reserved_timeout=10
         )
         tf_cluster.start(model_process=process, args=None)
 
@@ -27,8 +46,13 @@ local.
 When you specify the event\_log in tf builder, sidecar tensorboard will
 be started on one worker.
 
-How to build
-~~~~~~~~~~~~
+Gang scheduler is already supported in raytf, which means that only when
+the resources required by TensorFlow are met, resources will be held.
+Besides raytf provides the configuration of timeout for waiting for resources,
+shown in above code. The resources_reserved_timeout unit is sec
+
+How to build and deploy
+~~~~~~~~~~~~~~~~~~~~~~~
 
 [Requirement] python -m pip install twine
 

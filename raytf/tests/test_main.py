@@ -20,7 +20,7 @@ def init_cluster():
 def test_keras_multiworker_strategy(init_cluster):
     tf_cluster = TensorflowCluster.build(resources=
     {
-        "worker": {"cores": "2", "memory": "1", "gpu": "2", "instances": "1"},
+        "worker": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
     }
     )
     tf_cluster.start(model_process=tony_keras_process, args=None)
@@ -30,21 +30,22 @@ def test_keras_multiworker_strategy(init_cluster):
 def test_estimator_ps_strategy(init_cluster):
     tf_cluster = TensorflowCluster.build(resources=
     {
-        "ps": {"cores": "1", "memory": "1", "gpu": "2", "instances": "1"},
-        "worker": {"cores": "1", "memory": "1", "gpu": "2", "instances": "1"},
-        "chief": {"cores": "1", "memory": "1", "gpu": "2", "instances": "1"}
+        "ps": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
+        "worker": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
+        "chief": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1}
     }
     )
     tf_cluster.start(model_process=process, args=None)
+
 
 @pytest.mark.skip()
 def test_model_without_resources_will_exit(init_cluster):
     tf_cluster = TensorflowCluster.build(
         resources=
         {
-            "ps": {"cores": "2", "memory": "1", "gpu": "2", "instances": "1"},
-            "worker": {"cores": "2", "memory": "1", "gpu": "2", "instances": "1"},
-            "chief": {"cores": "1", "memory": "1", "gpu": "2", "instances": "1"}
+            "ps": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
+            "worker": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
+            "chief": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
         },
         resources_reserved_timeout=10
     )
@@ -77,6 +78,7 @@ def test_gang_scheduler(init_cluster):
         placement_group=pg,
         num_cpus=2
     ).remote())
+
 
 if __name__ == '__main__':
     sys.exit(pytest.main(["-v", __file__, "--capture=no"]))

@@ -1,5 +1,6 @@
 Distributed Deep Learning Framework on Ray
--------------------------
+--------------------------------------------------
+
 The raytf framework provides a simple interface to support distributed training on ray,
 including tensorflow/pytorch/mxnet. Now tensorflow has been supported,
 others will be included in later.
@@ -8,9 +9,9 @@ Quick Start
 ~~~~~~~~~~~
 Only tested under Python3.6 version
 
-1. Install the latest ray version: pip install ray
-2. Install the latest raytf: pip install raytf
-3. Git clone this project: git clone https://github.com/zuston/raytf.git
+1. Install the latest ray version: ``pip install ray``
+2. Install the latest raytf: ``pip install raytf``
+3. Git clone this project: ``git clone https://github.com/zuston/raytf.git``
 4. Enter the example folder and execute the python script file, like the following command.
 
 .. code:: bash
@@ -25,10 +26,10 @@ How to Use
 
 .. code:: python
 
-        from raytf.tf_cluster_driver import TensorflowCluster
+        from raytf.raytf_driver import Driver
         # When you using it in local single machine
         # ray.init()
-        tf_cluster = TensorflowCluster.build(resources=
+        tf_cluster = Driver.build(resources=
             {
                 "ps": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1},
                 "worker": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1},
@@ -54,11 +55,11 @@ shown in above code. The resources_reserved_timeout unit is sec
 How to build and deploy
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-[Requirement] python -m pip install twine
+<Requirement> ``python -m pip install twine``
 
-1. python setup.py bdist\_wheel --universal
-2. python -m pip install xxxxxx.whl
-3. twine upload dist/*
+1. ``python setup.py bdist\_wheel --universal``
+2. ``python -m pip install xxxxxx.whl``
+3. ``twine upload dist/*``
 
 Tips
 ~~~~

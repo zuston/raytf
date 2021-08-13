@@ -5,11 +5,12 @@ with open("README.rst", "r") as f:
   long_description = f.read()
 
 setup(name='raytf',  # 包名
-      version='0.0.1RC2',  # 版本号
+      # Reference from https://www.python.org/dev/peps/pep-0440/
+      version='0.0.1rc3.dev1',  # 版本号
       description='Tensorflow Cluster on Ray',
       long_description=long_description,
       author='junfan.zhang',
-      author_email='junfan.zhang@outloo.com',
+      author_email='junfan.zhang@outlook.com',
       url='https://github.com/zuston/raytf',
       install_requires=[],
       license='BSD License',

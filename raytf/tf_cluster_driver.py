@@ -1,33 +1,42 @@
 import ray
 from typing import Dict, Tuple
-import os
 from raytf import tf_executor
 from raytf import log_utils
 from ray.util.placement_group import (
     placement_group,
     placement_group_table
 )
+import sys
+import os
 
 UNTRACKED_ROLE_NAMES = {"PS": "", tf_executor.SIDECAR_TB_ROLE_NAME: ""}
 
 
 class TensorflowCluster:
     @staticmethod
+    def get_main_execution_path():
+        try:
+            main_execution_path = os.path.dirname(os.path.abspath(sys.modules['__main__'].__file__))
+            print(f"Execution path [{main_execution_path}] py files will be distributed to Ray cluster.")
+            return main_execution_path
+        except KeyError:
+            print('library not loaded from script')
+        except AttributeError:
+            print('script not loaded from file')
+        return None
+
+    @staticmethod
     def build(resources: Dict[str, Dict[str, str]] = None,
               event_log: str = None,
               resources_reserved_timeout: int = None):
         if not ray.is_initialized():
-            current_main_path = os.path.dirname(os.path.abspath(__file__))
-            print(f"Current execution file path: [{current_main_path}], its py files "
-                  f"will be distributed to other workers.")
+            # todo: Dont support in python interactive model
+            main_execute_path = TensorflowCluster.get_main_execution_path()
             runtime_env = {
-                "working_dir": current_main_path
+                "working_dir": main_execute_path
             }
             jobconf = ray.job_config.JobConfig(runtime_env=runtime_env)
-            # It will be attached to existed Ray cluster.
             ray.init(address='auto', job_config=jobconf)
-
-        # Use the GANG strategy to reserve resources
 
         tf_cluster = TensorflowCluster()
         tf_cluster.__build(resources=resources,
@@ -57,7 +66,7 @@ class TensorflowCluster:
                 resources_reserved_timeout: int = None):
         if not resources:
             raise Exception("Must set the tensorflow cluster resources.")
-        self.__logger.info(f"tf cluster resources: {resources}")
+        self.__logger.info(f"Tensorflow cluster resources: {resources}")
 
         # When enabled event_log_path, it should request new resource for sidecar-tb
         self.__event_log_path = event_log_path

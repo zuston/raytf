@@ -2,7 +2,7 @@ import ray
 
 from raytf.tests.sample_tf_estimator_model import process
 from raytf.tests.sample_tf_keras_tony_model import tony_keras_process
-from raytf.tf_cluster_driver import TensorflowCluster
+from raytf.raytf_driver import Driver
 import pytest
 import sys
 from ray.util.placement_group import (
@@ -18,7 +18,7 @@ def init_cluster():
 
 @pytest.mark.skip()
 def test_keras_multiworker_strategy(init_cluster):
-    tf_cluster = TensorflowCluster.build(resources=
+    tf_cluster = Driver.build(resources=
     {
         "worker": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
     }
@@ -28,7 +28,7 @@ def test_keras_multiworker_strategy(init_cluster):
 
 @pytest.mark.skip()
 def test_estimator_ps_strategy(init_cluster):
-    tf_cluster = TensorflowCluster.build(resources=
+    tf_cluster = Driver.build(resources=
     {
         "ps": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
         "worker": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
@@ -40,7 +40,7 @@ def test_estimator_ps_strategy(init_cluster):
 
 @pytest.mark.skip()
 def test_model_without_resources_will_exit(init_cluster):
-    tf_cluster = TensorflowCluster.build(
+    tf_cluster = Driver.build(
         resources=
         {
             "ps": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
@@ -81,4 +81,7 @@ def test_gang_scheduler(init_cluster):
 
 
 if __name__ == '__main__':
-    sys.exit(pytest.main(["-v", __file__, "--capture=no"]))
+    # sys.exit(pytest.main(["-v", __file__, "--capture=no"]))
+    ray.init(num_cpus=4)
+    test_estimator_ps_strategy(None)
+

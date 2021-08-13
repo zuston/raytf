@@ -1,6 +1,6 @@
 import ray
 from typing import Dict, Tuple
-from raytf import tf_executor
+from raytf import raytf_executor
 from raytf import log_utils
 from ray.util.placement_group import (
     placement_group,
@@ -9,10 +9,17 @@ from ray.util.placement_group import (
 import sys
 import os
 
-UNTRACKED_ROLE_NAMES = {"PS": "", tf_executor.SIDECAR_TB_ROLE_NAME: ""}
+from raytf.tf_runtime import TFRuntime
+
+UNTRACKED_ROLE_NAMES = {"PS": "", raytf_executor.SIDECAR_TB_ROLE_NAME: ""}
+
+RAY_RUNTIME_WORK_DIR = "working_dir"
+
+DL_FRAMEWORK = "framework"
+DEFAULT_DL_FRAMEWORK = "tensorflow"
 
 
-class TensorflowCluster:
+class Driver:
     @staticmethod
     def get_main_execution_path():
         try:
@@ -31,33 +38,35 @@ class TensorflowCluster:
               resources_reserved_timeout: int = None):
         if not ray.is_initialized():
             # todo: Dont support in python interactive model
-            main_execute_path = TensorflowCluster.get_main_execution_path()
+            main_execute_path = Driver.get_main_execution_path()
             runtime_env = {
-                "working_dir": main_execute_path
+                RAY_RUNTIME_WORK_DIR: main_execute_path
             }
             jobconf = ray.job_config.JobConfig(runtime_env=runtime_env)
             ray.init(address='auto', job_config=jobconf)
 
-        tf_cluster = TensorflowCluster()
-        tf_cluster.__build(resources=resources,
-                           event_log_path=event_log,
-                           resources_reserved_timeout=resources_reserved_timeout)
-        return tf_cluster
+        cluster = Driver()
+        cluster.__build(resources=resources,
+                        event_log_path=event_log,
+                        resources_reserved_timeout=resources_reserved_timeout)
+        return cluster
 
     def __init__(self):
         self.__logger = log_utils.get_logger(__name__)
-        self.__logger.info("Init tensorflow cluster.")
+        self.__logger.info("Init raytf cluster.")
         self.__role_executors_list = []
         self.__ps_size = 0
         self.__tb_url = None
         self.__placement_group = None
         self.__resources_reserved_timeout = None
 
+        self.__framework_runtime = TFRuntime()
+
     '''
     resources will be as follows: (memory-unit GB)
-        ps: {"cores": "2", "memory": "2", "gpu": "2", "instances": "2"}
-        worker: {"cores": "2", "memory": "2", "gpu": "2", "instances": "4"}
-        evaluator: {"cores": "2", "memory": "2", "gpu": "2", "instances": "1"}
+        ps: {"cores": 2, "memory": 2, "gpu": 2, "instances": 4}
+        worker: {"cores": 2, "memory": 2, "gpu": 2, "instances": 2}
+        evaluator: {"cores": 2, "memory": 2, "gpu": 2, "instances": 1}
     '''
 
     def __build(self,
@@ -65,8 +74,9 @@ class TensorflowCluster:
                 event_log_path: str = None,
                 resources_reserved_timeout: int = None):
         if not resources:
-            raise Exception("Must set the tensorflow cluster resources.")
-        self.__logger.info(f"Tensorflow cluster resources: {resources}")
+            raise Exception("Must set the raytf cluster resources.")
+
+        self.__logger.info(f"Raytf cluster resources: {resources}")
 
         # When enabled event_log_path, it should request new resource for sidecar-tb
         self.__event_log_path = event_log_path
@@ -75,33 +85,37 @@ class TensorflowCluster:
         self.__sidecar_tb_enabled = False
         if self.__event_log_path:
             self.__sidecar_tb_enabled = True
-            resources[tf_executor.SIDECAR_TB_ROLE_NAME] = {"cores": "2", "memory": "2", "gpu": "0", "instances": "1"}
+            resources[raytf_executor.SIDECAR_TB_ROLE_NAME] = {"cores": "2", "memory": "2", "gpu": "0", "instances": "1"}
             self.__sidecar_tb_enabled = True
 
         self.__reserved_resources(resources)
         self.__build_executor(resources)
-        self.__logger.info("Startup tensorflow cluster.")
+        self.__logger.info("Startup raytf training cluster.")
 
     def start(self, model_process, args):
         self.__logger.info("Starting training.")
 
-        finished_no_ps_role_size = 0
-        tracked_role_size = len(self.__role_executors_list) - self.__ps_size - (
-            0 if not self.__sidecar_tb_enabled else 1)
-
         if self.__sidecar_tb_enabled and self.__tb_url:
             self.__logger.info(f"Sidecar tensorboard visiting url: {self.__tb_url}")
 
-        waiting = [executor.run.remote(model_process, args) for executor in self.__role_executors_list]
+        tracked_role_finished_size = 0
+        need_tracked_role_list = self.__framework_runtime.get_tracked_role_list()
+        tracked_role_size = self.get_tracked_role_size(self.__role_executors_list, need_tracked_role_list)
+
+        self.__logger.info(f"Need tracked role name set: {need_tracked_role_list}, role size: {tracked_role_size}")
+
         stop = False
+
+        waiting = [executor.run.remote(model_process, args) for executor in self.__role_executors_list]
         while len(waiting) > 0 and not stop:
             ready, waiting = ray.wait(waiting, num_returns=1)
             finished_task_list = ray.get(ready)
             for role_name, _ in finished_task_list:
-                if role_name != 'ps' and role_name != tf_executor.SIDECAR_TB_ROLE_NAME:
-                    finished_no_ps_role_size += 1
-            if finished_no_ps_role_size == tracked_role_size:
-                self.__logger.info(f"All {finished_no_ps_role_size} tracked tasks have finished. Stop all PS...")
+                if role_name in need_tracked_role_list:
+                    tracked_role_finished_size += 1
+            if tracked_role_finished_size == tracked_role_size:
+                self.__logger.info(f"All {tracked_role_finished_size} tracked tasks have finished. "
+                                   f"Stop all other role, like PS...")
                 stop = True
 
     def __build_executor(self, resources):
@@ -110,14 +124,15 @@ class TensorflowCluster:
             if role_name == 'ps':
                 self.__ps_size = instances
 
-            executor_objs = [tf_executor
+            executor_objs = [raytf_executor
                                  .Executor
                                  .options(name=f"{role_name}-{index}",
                                           num_cpus=cores,
                                           memory=memory_bytes,
-                                          placement_group=self.__placement_group)
+                                          placement_group=self.__placement_group
+                                          )
                                  .remote(role_name,
-                                         index, self.__event_log_path)
+                                         index, self.__event_log_path, runtime=self.__framework_runtime)
                              for index in range(instances)]
             self.__logger.info(f"Request resources. role_name: {role_name}, instances: {len(executor_objs)}")
 
@@ -127,7 +142,7 @@ class TensorflowCluster:
         self.__logger.info(f"TF cluster role info list: {role_info_list}")
 
         tb_urls = [tb_url for role_name, _, _, tb_url in role_info_list if
-                   role_name == tf_executor.SIDECAR_TB_ROLE_NAME]
+                   role_name == raytf_executor.SIDECAR_TB_ROLE_NAME]
         if tb_urls and len(tb_urls) == 1:
             self.__tb_url = tb_urls[0]
 
@@ -163,3 +178,8 @@ class TensorflowCluster:
         memory_bytes = memory * 1024 * 1024 * 1024
         instances = int(role_resources_dict["instances"]) if role_resources_dict["instances"] else 1
         return cores, memory_bytes, instances
+
+    def get_tracked_role_size(self, role_executors_list, need_tracked_role_list):
+        tracked_executors = [executor for executor in role_executors_list
+                             if ray.get(executor.get_role_name.remote()) in need_tracked_role_list]
+        return len(tracked_executors)

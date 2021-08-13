@@ -5,13 +5,14 @@ import os
 
 from raytf import log_utils
 from raytf import tool_utils
+from raytf.runtime import Runtime
 
 SIDECAR_TB_ROLE_NAME = "sidecar_tensorboard"
 
 
 @ray.remote(max_retries=0)
 class Executor:
-    def __init__(self, role_name: str, role_index: int, event_log_path: str = None):
+    def __init__(self, role_name: str, role_index: int, event_log_path: str = None, runtime: Runtime = None):
         self.__logger = log_utils.get_logger(__name__)
         self.__role_name = role_name
         self.__role_index = role_index
@@ -25,6 +26,11 @@ class Executor:
             raise Exception(f"Sidecar Tensorboard must exist event log path.")
         self.__tb_port = -1 if not self.__is_sidecar_tb_enabled else tool_utils.get_free_port()
 
+        self.__dl_runtime = runtime
+
+    def get_role_name(self):
+        return self.__role_name
+
     def get_role_info(self) -> Tuple[str, int, str, str]:
         return self.__role_name, self.__role_index, f"{self.__node_ip}:{self.__grpc_port}", f"{self.__node_ip}:{self.__tb_port}"
 
@@ -35,25 +41,10 @@ class Executor:
         if self.__is_sidecar_tb_enabled:
             return
 
-        spec_tmp_dict = {}
-        for (role, _, hostip, _) in spec_info:
-            if role == SIDECAR_TB_ROLE_NAME:
-                continue
-            if role not in spec_tmp_dict:
-                spec_tmp_dict[role] = [hostip]
-            else:
-                spec_tmp_dict[role].append(hostip)
-        tf_spec_dict = {
-            "cluster": spec_tmp_dict,
-            "task": {
-                "type": self.__role_name,
-                "index": self.__role_index
-            }
-        }
-        cluster_spec_json = json.dumps(tf_spec_dict)
-        self.__logger.info(f"[{self.__role_name}][{self.__role_index}], cluster spec: {cluster_spec_json}")
-        os.environ['TF_GRPC_REUSE_PORT'] = "true"
-        os.environ['TF_CONFIG'] = cluster_spec_json
+        env_dict = self.__dl_runtime.construct_cluster_spec(self.__role_name, self.__role_index, spec_info)
+
+        for k in env_dict:
+            os.environ[k] = env_dict[k]
 
     def run(self, model_process, args) -> Tuple[str, int]:
         self.__logger.info(f"[{self.__role_name}][{self.__role_index}], Running")

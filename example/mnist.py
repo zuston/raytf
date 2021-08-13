@@ -1,6 +1,6 @@
 import numpy as np
 import tensorflow as tf
-from raytf.tf_cluster_driver import TensorflowCluster
+from raytf.raytf_driver import Driver
 import ray
 
 class FLAGS:
@@ -95,7 +95,7 @@ def main_action(argv):
 
 if __name__ == '__main__':
     ray.init()
-    tf_cluster = TensorflowCluster.build(resources=
+    tf_cluster = Driver.build(resources=
     {
         "ps": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
         "worker": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},

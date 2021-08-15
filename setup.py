@@ -6,7 +6,7 @@ with open("README.rst", "r") as f:
 
 setup(name='raytf',  # 包名
       # Reference from https://www.python.org/dev/peps/pep-0440/
-      version='0.0.1rc3.dev1',  # 版本号
+      version='0.0.1',  # 版本号
       description='Tensorflow Cluster on Ray',
       long_description=long_description,
       author='junfan.zhang',

@@ -31,12 +31,12 @@ How to Use
         # ray.init()
         tf_cluster = Driver.build(resources=
             {
-                "ps": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1},
-                "worker": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1},
-                "chief": {"cores": 2, "memory": 2, "gpu": 2, "instances": 1}
+                'ps': {'cores': 2, 'memory': 2, 'gpu': 2, 'instances': 2},
+                'worker': {'cores': 2, 'memory': 2, 'gpu': 2, 'instances': 6},
+                'chief': {'cores': 2, 'memory': 2, 'gpu': 2, 'instances': 1}
             },
-            event_log="/tmp/opal/4",
-            resources_reserved_timeout=10
+            event_log='/tmp/opal/4',
+            resources_allocation_timeout=10
         )
         tf_cluster.start(model_process=process, args=None)
 
@@ -47,10 +47,9 @@ local.
 When you specify the event\_log in tf builder, sidecar tensorboard will
 be started on one worker.
 
-Gang scheduler is already supported in raytf, which means that only when
-the resources required by TensorFlow are met, resources will be held.
-Besides raytf provides the configuration of timeout for waiting for resources,
-shown in above code. The resources_reserved_timeout unit is sec
+GANG scheduler has been supported.Besides raytf provides the
+configuration of timeout for waiting resources
+which is shown in above code. The ``resources_reserved_timeout`` unit is sec
 
 How to build and deploy
 ~~~~~~~~~~~~~~~~~~~~~~~

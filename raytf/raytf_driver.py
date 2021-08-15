@@ -35,9 +35,9 @@ class Driver:
     @staticmethod
     def build(resources: Dict[str, Dict[str, str]] = None,
               event_log: str = None,
-              resources_reserved_timeout: int = None):
+              resources_allocation_timeout: int = None):
         if not ray.is_initialized():
-            # todo: Dont support in python interactive model
+            # todo: support distributed training under python interactive mode
             main_execute_path = Driver.get_main_execution_path()
             runtime_env = {
                 RAY_RUNTIME_WORK_DIR: main_execute_path
@@ -48,7 +48,7 @@ class Driver:
         cluster = Driver()
         cluster.__build(resources=resources,
                         event_log_path=event_log,
-                        resources_reserved_timeout=resources_reserved_timeout)
+                        resources_allocation_timeout=resources_allocation_timeout)
         return cluster
 
     def __init__(self):
@@ -58,7 +58,7 @@ class Driver:
         self.__ps_size = 0
         self.__tb_url = None
         self.__placement_group = None
-        self.__resources_reserved_timeout = None
+        self.__resources_allocation_timeout = None
 
         self.__framework_runtime = TFRuntime()
 
@@ -72,7 +72,7 @@ class Driver:
     def __build(self,
                 resources: Dict[str, Dict[str, str]] = None,
                 event_log_path: str = None,
-                resources_reserved_timeout: int = None):
+                resources_allocation_timeout: int = None):
         if not resources:
             raise Exception("Must set the raytf cluster resources.")
 
@@ -80,7 +80,7 @@ class Driver:
 
         # When enabled event_log_path, it should request new resource for sidecar-tb
         self.__event_log_path = event_log_path
-        self.__resources_reserved_timeout = resources_reserved_timeout
+        self.__resources_allocation_timeout = resources_allocation_timeout
 
         self.__sidecar_tb_enabled = False
         if self.__event_log_path:
@@ -88,7 +88,7 @@ class Driver:
             resources[raytf_executor.SIDECAR_TB_ROLE_NAME] = {"cores": "2", "memory": "2", "gpu": "0", "instances": "1"}
             self.__sidecar_tb_enabled = True
 
-        self.__reserved_resources(resources)
+        self.__request_resources(resources)
         self.__build_executor(resources)
         self.__logger.info("Startup raytf training cluster.")
 
@@ -148,7 +148,7 @@ class Driver:
 
         ray.get([executor.set_tf_cluster_spec.remote(role_info_list) for executor in self.__role_executors_list])
 
-    def __reserved_resources(self, resources):
+    def __request_resources(self, resources):
         resource_bundles = []
         for _, role_resources_dict in resources.items():
             cores, memory_bytes, instances = self.__parse_resources_conf(role_resources_dict)
@@ -164,9 +164,9 @@ class Driver:
             )
         pg = placement_group(resource_bundles, strategy="SPREAD")
         self.__placement_group = pg
-        ready, _ = ray.wait([pg.ready()], timeout=self.__resources_reserved_timeout)
+        ready, _ = ray.wait([pg.ready()], timeout=self.__resources_allocation_timeout)
         if not ready:
-            error_message = f"Failed to get resources, driver exit because of reserving resources timeout."
+            error_message = f"Failed to get resources, driver exit because of resources allocation timeout."
             self.__logger.error(error_message)
             raise Exception(error_message)
 

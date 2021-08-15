@@ -4,7 +4,6 @@ from raytf.tests.sample_tf_estimator_model import process
 from raytf.tests.sample_tf_keras_tony_model import tony_keras_process
 from raytf.raytf_driver import Driver
 import pytest
-import sys
 from ray.util.placement_group import (
     placement_group
 )
@@ -28,12 +27,14 @@ def test_keras_multiworker_strategy(init_cluster):
 
 @pytest.mark.skip()
 def test_estimator_ps_strategy(init_cluster):
-    tf_cluster = Driver.build(resources=
-    {
-        "ps": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
-        "worker": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
-        "chief": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1}
-    }
+    tf_cluster = Driver.build(
+        resources=
+        {
+            "ps": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
+            "worker": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
+            "chief": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1}
+        },
+        resources_allocation_timeout=10
     )
     tf_cluster.start(model_process=process, args=None)
 
@@ -47,7 +48,7 @@ def test_model_without_resources_will_exit(init_cluster):
             "worker": {"cores": 2, "memory": 1, "gpu": 2, "instances": 1},
             "chief": {"cores": 1, "memory": 1, "gpu": 2, "instances": 1},
         },
-        resources_reserved_timeout=10
+        resources_allocation_timeout=10
     )
     try:
         tf_cluster.start(model_process=process, args=None)

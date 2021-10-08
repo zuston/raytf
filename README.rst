@@ -49,7 +49,7 @@ be started on one worker.
 
 GANG scheduler has been supported.Besides raytf provides the
 configuration of timeout for waiting resources
-which is shown in above code. The ``resources_reserved_timeout`` unit is sec
+which is shown in above code. The ``resources_allocation_timeout`` unit is sec
 
 How to build and deploy
 ~~~~~~~~~~~~~~~~~~~~~~~

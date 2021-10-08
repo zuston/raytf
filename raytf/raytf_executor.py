@@ -17,13 +17,13 @@ class Executor:
         self.__role_name = role_name
         self.__role_index = role_index
         # 初始化节点地址和 grpc 端口，用来构建 tf cluster spec.
-        self.__node_ip = ray._private.services.get_node_ip_address()
+        self.__node_ip = ray.util.get_node_ip_address()
         self.__grpc_port = tool_utils.get_reserved_grpc_port()
 
         self.__is_sidecar_tb_enabled = True if role_name == SIDECAR_TB_ROLE_NAME else False
         self.__event_log_path = event_log_path
         if self.__is_sidecar_tb_enabled and not event_log_path:
-            raise Exception(f"Sidecar Tensorboard must exist event log path.")
+            raise Exception(f"Sidecar Tensorboard must specify event log path.")
         self.__tb_port = -1 if not self.__is_sidecar_tb_enabled else tool_utils.get_free_port()
 
         self.__dl_runtime = runtime

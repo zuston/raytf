@@ -40,16 +40,15 @@ How to Use
         )
         tf_cluster.start(model_process=process, args=None)
 
-This training code will be attached to the existed perm-Ray cluster. If
-you want to debug, you can use ``ray.init()`` to init Ray cluster in
-local.
+This training code will be attached to the existed on-prem Ray cluster. If 
+debug, you can use ``ray.init()`` to init Ray cluster in local.
 
 When you specify the event\_log in tf builder, sidecar tensorboard will
 be started on one worker.
 
-GANG scheduler has been supported.Besides raytf provides the
-configuration of timeout for waiting resources
-which is shown in above code. The ``resources_allocation_timeout`` unit is sec
+GANG scheduler has been supported. Besides raytf provides the configuration of 
+timeout for waiting resources which is shown in above code, and the option 
+of ``resources_allocation_timeout`` unit is sec.
 
 How to build and deploy
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -63,7 +62,7 @@ How to build and deploy
 Tips
 ~~~~
 
-1. To solve the problem of Python module importing on Ray perm-cluster,
+1. To solve the problem of Python module importing on Ray on-prem cluster,
    this project must use Ray 1.5+ version, refer to this
    RFC(https://github.com/ray-project/ray/issues/14019)
 2. This project is only be tested by Tensorflow estimator training
